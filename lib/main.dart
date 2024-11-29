@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/models/login_model.dart';
 import 'package:xp_internal/screens/capacity/capacity.dart';
+
 import 'package:xp_internal/screens/home/home.dart';
 
 import 'package:xp_internal/screens/login/login_page.dart';
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
       ),
-      home: CapacityPage(),
+      home: MaterialApp(),
     );
   }
 }

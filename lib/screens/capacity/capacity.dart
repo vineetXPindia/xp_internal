@@ -4,7 +4,7 @@ import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/Capacity/capacity_at_unloading.dart';
 import 'package:xp_internal/models/available_capacity_model.dart';
 import 'package:xp_internal/models/login_model.dart';
-import 'package:xp_internal/widgets/top_bar.dart';
+
 import 'package:http/http.dart' as http;
 
 class CapacityPage extends StatefulWidget {
@@ -17,7 +17,12 @@ class CapacityPage extends StatefulWidget {
 class _CapacityPageState extends State<CapacityPage> {
   CapacityModel? availableCapacity;
   CapacityUnloadingModel? capacityAtUnloading;
-
+  String selectedCapacity = 'Available Capacity';
+  var optionsList = [
+    'Available Capacity',
+    'Capacity at Unloading',
+    'Future Capacity'
+  ];
   bool isLoading = true;
   late String userType;
   late String userId;
@@ -26,33 +31,39 @@ class _CapacityPageState extends State<CapacityPage> {
   @override
   void initState() {
     super.initState();
-    fetchAvailableCapacity();
+    fetchCapacity();
   }
 
-  Future<void> fetchCapacity(String? selectedCapacity) async {
+  ///////////////////////////
+  Future<void> initializeUser() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    LoginDataModel loginModel = LoginDataModel();
+
+    var userData = prefs.getString('userResponse');
+    if (userData != null && userData.isNotEmpty) {
+      loginModel = loginDataModelFromJson(userData.toString());
+      String? firstName = loginModel.data?.firstName;
+      String? lastName = loginModel.data?.lastName;
+      userName = '$firstName $lastName';
+      userId = loginModel.data!.userId.toString();
+      userType = loginModel.data!.userType.toString();
+      authToken = loginModel.data!.authToken.toString();
+    }
+  }
+
+  Future<void> fetchCapacity() async {
     if (selectedCapacity == 'Available Capacity') {
-      fetchAvailableCapacity();
+      await fetchAvailableCapacity();
     } else if (selectedCapacity == 'Capacity at Unloading') {
-      fetchCapacityUnloading();
+      await fetchCapacityUnloading();
     }
   }
 
   //method to get available capacity
   Future<void> fetchAvailableCapacity() async {
     WidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    LoginDataModel dataModel = LoginDataModel();
-
-    var userData = prefs.getString('userResponse');
-    if (userData != null && userData.isNotEmpty) {
-      dataModel = loginDataModelFromJson(userData.toString());
-      String? firstName = dataModel.data?.firstName;
-      String? lastName = dataModel.data?.lastName;
-      userType = dataModel.data!.userType.toString();
-      userId = dataModel.data!.userId.toString();
-      authToken = dataModel.data!.authToken.toString();
-      userName = "$firstName $lastName";
-    }
+    await initializeUser();
     var headers = {
       "UserType": userType,
       "UserId": userId,
@@ -66,7 +77,6 @@ class _CapacityPageState extends State<CapacityPage> {
       "ZoneType": "",
       "Type": "${1}"
     };
-
     var response = await http.post(
         Uri.parse('http://qaapi.xpindia.in/api/get-capacity'),
         headers: headers,
@@ -74,7 +84,6 @@ class _CapacityPageState extends State<CapacityPage> {
     if (response.statusCode == 200) {
       setState(() {
         availableCapacity = capacityModelFromJson(response.body);
-        var data = availableCapacity?.data;
         isLoading = false;
       });
     } else {
@@ -88,18 +97,7 @@ class _CapacityPageState extends State<CapacityPage> {
   //method to get capacity at unloading
   Future<void> fetchCapacityUnloading() async {
     WidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    LoginDataModel loginModel = LoginDataModel();
-    var userData = prefs.getString('userResponse');
-    if (userData != null && userData.isNotEmpty) {
-      loginModel = loginDataModelFromJson(userData.toString());
-      userId = loginModel.data!.userId.toString();
-      userType = loginModel.data!.userType.toString();
-      authToken = loginModel.data!.authToken.toString();
-      String? firstName = loginModel.data!.firstName.toString();
-      String? lastName = loginModel.data!.lastName.toString();
-      userName = "$firstName $lastName";
-    }
+    await initializeUser();
     var headers = {
       "UserId": userId,
       "UserType": userType,
@@ -122,15 +120,9 @@ class _CapacityPageState extends State<CapacityPage> {
     if (response.statusCode == 200) {
       setState(() {
         capacityAtUnloading = capacityUnloadingModelFromJson(response.body);
-        var data = capacityAtUnloading?.data;
         isLoading = false;
-        for (var item in data!) {
-          print(item.vehicleNumber);
-        }
       });
     } else {
-      showDialog(
-          context: context, builder: (context) => Text('Error in loading'));
       setState(() {
         isLoading = false;
       });
@@ -145,17 +137,11 @@ class _CapacityPageState extends State<CapacityPage> {
     // Value notifiers to manage state
     final ValueNotifier<List<bool>> selectedService =
         ValueNotifier([true, false]);
-    final ValueNotifier<String?> selectedValue = ValueNotifier(null);
+    // ValueNotifier<String?> selectedValue = ValueNotifier(null);
 
     final List<Widget> serviceToggle = <Widget>[
-      Text(
-        'FCL',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      Text(
-        'LCL',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      )
+      Text('FCL', style: TextStyle(fontWeight: FontWeight.bold)),
+      Text('LCL', style: TextStyle(fontWeight: FontWeight.bold))
     ];
     return Scaffold(
       backgroundColor: newCardBG,
@@ -185,7 +171,6 @@ class _CapacityPageState extends State<CapacityPage> {
                       (i) => i == index,
                     );
                   },
-                  children: serviceToggle,
                   isSelected: value,
                   selectedColor: Colors.white,
                   fillColor: Colors.blue.shade900.withOpacity(0.7),
@@ -193,66 +178,39 @@ class _CapacityPageState extends State<CapacityPage> {
                   constraints: BoxConstraints(
                       minHeight: screenHeight * 0.06,
                       minWidth: screenWidth * 0.4),
+                  children: serviceToggle,
                 );
               },
             ),
+            SizedBox(
+              height: screenHeight * 0.02,
+            ),
             Container(
-              margin: EdgeInsets.only(top: screenHeight * 0.02),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      vertical: screenWidth * 0.01,
-                      horizontal: screenWidth * 0.03),
-                  child: Container(
-                    margin: EdgeInsets.only(
-                        left: screenWidth * 0.01, right: screenWidth * 0.03),
-                    child: ValueListenableBuilder<String?>(
-                      valueListenable: selectedValue,
-                      builder: (context, value, child) {
-                        return DropdownButton<String>(
-                          borderRadius:
-                              BorderRadius.circular(screenWidth * 0.04),
-                          dropdownColor: Colors.white,
-                          value: value, // Holds the currently selected value
-                          hint: const Text(
-                              'Available Capacity'), // Placeholder text
-                          isExpanded:
-                              true, // Ensures dropdown matches container width
-                          underline:
-                              const SizedBox(), // Removes default underline
-                          icon: const Icon(
-                              Icons.arrow_drop_down), // Dropdown icon
-                          items: const [
-                            DropdownMenuItem(
-                              // these are the options in dropdown menu,
-                              value: "Available Capacity",
-                              child: Text("Available Capacity"),
-                            ),
-                            DropdownMenuItem(
-                              value: "Capacity at Unloading",
-                              child: Text("Capacity at Unloading"),
-                            ),
-                            DropdownMenuItem(
-                              value: "Future Capacity",
-                              child: Text("Future Capacity"),
-                            ),
-                          ],
-                          onChanged: (String? newValue) {
-                            selectedValue.value = newValue;
-                            var selectedCapacity =
-                                selectedValue.value! ?? 'Available Capacity';
-                            fetchCapacity(selectedValue.value);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
+              width: screenWidth,
+              padding: EdgeInsets.only(
+                  left: screenWidth * 0.05, right: screenWidth * 0.07),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                color: Colors.white,
               ),
+              child: DropdownButton(
+                  isExpanded: true,
+                  underline: SizedBox(),
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  value: selectedCapacity,
+                  items: optionsList.map((String items) {
+                    return DropdownMenuItem(
+                      value: items,
+                      child: Text(items),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedCapacity = newValue!;
+                    });
+                    fetchCapacity();
+                  }),
             ),
             Container(
               margin: EdgeInsets.only(top: screenHeight * 0.02),
@@ -265,13 +223,13 @@ class _CapacityPageState extends State<CapacityPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Text(
-                    'Total (${availableCapacity?.data?.length ?? 0}):',
+                    'Total ${availableCapacity?.data?.length ?? 0} :',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text('Dedicated(), ',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text('Dynamic()',
-                      style: TextStyle(fontWeight: FontWeight.bold))
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -301,23 +259,14 @@ class _CapacityPageState extends State<CapacityPage> {
               height: screenHeight * 0.01,
             ),
             isLoading
-                ? Center(
-                    child: Container(
-                    margin: EdgeInsets.all(screenWidth * 0.01),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.blue.shade900,
-                      ),
+                ? Container(
+                    padding: EdgeInsets.only(top: screenHeight * 0.1),
+                    child: CircularProgressIndicator(
+                      color: Colors.blue.shade900,
                     ),
-                  ))
+                  )
                 : Expanded(
-                    child: ((capacityAtUnloading?.data?.length ?? 0) > 0)
-                        ? displayCapacity(screenHeight, screenWidth)
-                        : Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.blue.shade900,
-                            ),
-                          ),
+                    child: displayCapacity(screenHeight, screenWidth),
                   ),
           ],
         ),
@@ -326,10 +275,16 @@ class _CapacityPageState extends State<CapacityPage> {
   }
 
   Widget displayCapacity(double screenHeight, double screenWidth) {
+    List<dynamic>? data;
+    if (selectedCapacity == 'Available Capacity') {
+      data = availableCapacity?.data;
+    } else if (selectedCapacity == 'Capacity at Unloading') {
+      data = capacityAtUnloading?.data;
+    }
     return ListView.builder(
-        itemCount: availableCapacity?.data?.length ?? 0,
+        itemCount: data?.length ?? 0,
         itemBuilder: (context, index) {
-          var res = availableCapacity?.data?[index];
+          // var res = selectedValue == 'Available Capacity' ? availableCapacity?.data![index] : capacityAtUnloading?.data![index];
           return Padding(
             padding: EdgeInsets.all(screenWidth * 0.02),
             child: Container(
@@ -347,12 +302,15 @@ class _CapacityPageState extends State<CapacityPage> {
                   ]),
               child: Column(
                 children: [
-                  infoRow('Branch', '${res?.branch}'),
-                  infoRow('FFV Name', '${res?.ffVname}'),
-                  infoRow('Capacity Type', '${res?.capacityType}'),
-                  infoRow('Vehicle Type', '${res?.vechileTypeName}'),
-                  infoRow('Vehicle No.', '${res?.vechileNumber}'),
-                  infoRow("Location", '${res?.locationName}'),
+                  infoRow('Branch', '${data?[index].branch}'),
+                  infoRow('FFV Name', '${data?[index].ffvName}'),
+                  infoRow('Capacity Type', '${data?[index].capacityType}'),
+                  infoRow('Vehicle Type', '${data?[index].vehicleType}'),
+                  infoRow('Vehicle No.', '${data?[index].vehicleNumber}'),
+                  infoRow(
+                    "Location",
+                    data?[index].currentLocation ?? " ",
+                  ),
                 ],
               ),
             ),
@@ -368,8 +326,9 @@ class _CapacityPageState extends State<CapacityPage> {
           children: [
             Container(
               padding: EdgeInsets.only(left: 5, bottom: 2),
-              width: 100,
+              width: 110,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     label,
@@ -391,46 +350,11 @@ class _CapacityPageState extends State<CapacityPage> {
         Divider(
           height: 5,
           thickness: 1,
-          color: Colors.grey.withOpacity(0.3),
+          indent: 10,
+          endIndent: 10,
+          color: Colors.grey.withOpacity(0.2),
         )
       ],
     );
   }
-
-  // Widget infoRow(String label, String value,
-  //     {TextStyle? labelStyle, TextStyle? valueStyle}) {
-  //   return Row(
-  //     children: [
-  //       Column(
-  //         children: [
-  //           Text(
-  //             label,
-  //             style: labelStyle ??
-  //                 TextStyle(
-  //                   fontWeight: FontWeight.normal,
-  //                   fontSize: 14,
-  //                   color: Colors.black.withOpacity(0.5),
-  //                 ),
-  //           ),
-  //         ],
-  //       ),
-  //       SizedBox(
-  //         width: 10,
-  //       ),
-  //       Column(
-  //         children: [
-  //           Text(
-  //             value,
-  //             style: valueStyle ??
-  //                 const TextStyle(
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 14,
-  //                   color: Colors.black,
-  //                 ),
-  //           ),
-  //         ],
-  //       )
-  //     ],
-  //   );
-  // }
 }

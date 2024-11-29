@@ -45,15 +45,15 @@ class Datum {
   int? capacityId;
   String? capacityType;
   int? ffVid;
-  String? ffVname;
+  String? ffvName;
   dynamic districtId;
   dynamic districtName;
   dynamic locationId;
-  String? locationName;
+  String? currentLocation;
   int? vechileTypeId;
-  String? vechileTypeName;
+  String? vehicleType;
   int? vechileId;
-  String? vechileNumber;
+  String? vehicleNumber;
   int? driverId;
   String? driverName;
   String? driverPhonenumber;
@@ -83,15 +83,15 @@ class Datum {
     this.capacityId,
     this.capacityType,
     this.ffVid,
-    this.ffVname,
+    this.ffvName,
     this.districtId,
     this.districtName,
     this.locationId,
-    this.locationName,
+    this.currentLocation,
     this.vechileTypeId,
-    this.vechileTypeName,
+    this.vehicleType,
     this.vechileId,
-    this.vechileNumber,
+    this.vehicleNumber,
     this.driverId,
     this.driverName,
     this.driverPhonenumber,
@@ -122,15 +122,15 @@ class Datum {
         capacityId: json["capacityId"],
         capacityType: json["capacityType"],
         ffVid: json["FFVid"],
-        ffVname: json["FFVname"],
+        ffvName: json["FFVname"],
         districtId: json["DistrictId"],
         districtName: json["DistrictName"],
         locationId: json["LocationId"],
-        locationName: json["LocationName"],
+        currentLocation: json["LocationName"],
         vechileTypeId: json["VechileTypeId"],
-        vechileTypeName: json["VechileTypeName"],
+        vehicleType: json["VechileTypeName"],
         vechileId: json["VechileId"],
-        vechileNumber: json["VechileNumber"],
+        vehicleNumber: json["VechileNumber"],
         driverId: json["DriverId"],
         driverName: json["DriverName"],
         driverPhonenumber: json["DriverPhonenumber"],
@@ -165,15 +165,15 @@ class Datum {
         "capacityId": capacityId,
         "capacityType": capacityType,
         "FFVid": ffVid,
-        "FFVname": ffVname,
+        "FFVname": ffvName,
         "DistrictId": districtId,
         "DistrictName": districtName,
         "LocationId": locationId,
-        "LocationName": locationName,
+        "LocationName": currentLocation,
         "VechileTypeId": vechileTypeId,
-        "VechileTypeName": vechileTypeName,
+        "VechileTypeName": vehicleType,
         "VechileId": vechileId,
-        "VechileNumber": vechileNumber,
+        "VechileNumber": vehicleNumber,
         "DriverId": driverId,
         "DriverName": driverName,
         "DriverPhonenumber": driverPhonenumber,
