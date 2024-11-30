@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/Capacity/capacity_at_unloading.dart';
-import 'package:xp_internal/models/available_capacity_model.dart';
+import 'package:xp_internal/models/Capacity/future_capacity_model.dart';
+import 'package:xp_internal/models/Capacity/available_capacity_model.dart';
 import 'package:xp_internal/models/login_model.dart';
 
 import 'package:http/http.dart' as http;
@@ -17,6 +18,7 @@ class CapacityPage extends StatefulWidget {
 class _CapacityPageState extends State<CapacityPage> {
   CapacityModel? availableCapacity;
   CapacityUnloadingModel? capacityAtUnloading;
+  FutureCapacityModel? futureCapacity;
   String selectedCapacity = 'Available Capacity';
   var optionsList = [
     'Available Capacity',
@@ -57,6 +59,8 @@ class _CapacityPageState extends State<CapacityPage> {
       await fetchAvailableCapacity();
     } else if (selectedCapacity == 'Capacity at Unloading') {
       await fetchCapacityUnloading();
+    } else if (selectedCapacity == 'Future Capacity') {
+      await fetchFutureCapacity();
     }
   }
 
@@ -130,6 +134,44 @@ class _CapacityPageState extends State<CapacityPage> {
     }
   }
 
+  Future<void> fetchFutureCapacity() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await initializeUser();
+    var headers = {
+      "UserId": userId,
+      "UserType": userType,
+      "UserName": userName,
+      "AuthToken": authToken
+    };
+    var body = {
+      "BranchName": "",
+      "FFVId": "",
+      "FilterApplied": "N7D",
+      "FilterBy": "ANY",
+      "Keyword": "",
+      "StartIndex": "${1}",
+      "PageLength": "${20}",
+      "VehicleTypeId": "",
+      "ZoneName": ""
+    };
+    var response = await http.post(
+      Uri.parse('http://qaapi.xpindia.in/api/get-capacity-for-future'),
+      headers: headers,
+      body: body,
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        futureCapacity = futureCapacityModelFromJson(response.body);
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Unable to Load');
+    }
+  }
+
   Widget build(BuildContext context) {
     final String title = 'Capacity';
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -138,6 +180,12 @@ class _CapacityPageState extends State<CapacityPage> {
     final ValueNotifier<List<bool>> selectedService =
         ValueNotifier([true, false]);
     // ValueNotifier<String?> selectedValue = ValueNotifier(null);
+    var itemCount = availableCapacity?.data?.length;
+    if (selectedCapacity == 'Capacity at Unloading') {
+      itemCount = capacityAtUnloading?.data?.length;
+    } else if (selectedCapacity == 'Future Capacity') {
+      itemCount = futureCapacity?.data?.length;
+    }
 
     final List<Widget> serviceToggle = <Widget>[
       Text('FCL', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -223,7 +271,7 @@ class _CapacityPageState extends State<CapacityPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Text(
-                    'Total ${availableCapacity?.data?.length ?? 0} :',
+                    'Total ${itemCount ?? " "} :',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text('Dedicated(), ',
@@ -280,6 +328,8 @@ class _CapacityPageState extends State<CapacityPage> {
       data = availableCapacity?.data;
     } else if (selectedCapacity == 'Capacity at Unloading') {
       data = capacityAtUnloading?.data;
+    } else if (selectedCapacity == 'Future Capacity') {
+      data = futureCapacity?.data;
     }
     return ListView.builder(
         itemCount: data?.length ?? 0,

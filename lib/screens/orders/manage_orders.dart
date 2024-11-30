@@ -2,11 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/login_model.dart';
 import 'package:xp_internal/models/pending_provisional_model.dart';
 import 'package:http/http.dart' as http;
+
+import '../../models/manage_orders/reschedule_orders_model.dart';
 
 class ManageOrders extends StatefulWidget {
   const ManageOrders({super.key});
@@ -16,8 +19,16 @@ class ManageOrders extends StatefulWidget {
 }
 
 class _ManageOrdersState extends State<ManageOrders> {
+  String selectedOption = 'Pending/Provisional Orders';
+  var optionsList = [
+    'Pending/Provisional Orders',
+    'Reschedule/Cancel Orders',
+    'Allocate Vehicle to Order',
+    'Revise/Cancel Allocation'
+  ];
   List<bool> selectedToggle = <bool>[true, false];
   PendingProvisionalModel? pendingOrders;
+  RescheduleOrdersModel? rescheduledOrders;
   bool isLoading = true;
   late String userType;
   late String userId;
@@ -32,19 +43,56 @@ class _ManageOrdersState extends State<ManageOrders> {
     fetchPendingOrders("7 Days");
   }
 
-  Future<void> fetchPendingOrders(String dateType) async {
+  Future<void> fetchOrders(String selectedOption) async {
+    if (selectedOption == 'Reschedule/Cancel Orders') {
+      fetchRescheduledOrders();
+    }
+  }
+
+  Future<void> initializeUser() async {
+    WidgetsFlutterBinding.ensureInitialized();
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    var loginData = prefs.getString('userResponse');
+    var userData = prefs.getString('userResponse');
     LoginDataModel loginModel = LoginDataModel();
-    if (loginData != null && loginData.isNotEmpty) {
-      loginModel = loginDataModelFromJson(loginData.toString());
-      userType = loginModel.data!.userType.toString();
-      userId = loginModel.data!.userId.toString();
-      authToken = loginModel.data!.authToken.toString();
+    if (userData != null && userData.isNotEmpty) {
+      loginModel = loginDataModelFromJson(userData.toString());
       firstName = loginModel.data!.firstName.toString();
       lastName = loginModel.data!.lastName.toString();
+      userId = loginModel.data!.userId.toString();
+      userType = loginModel.data!.userType.toString();
       userName = '$firstName $lastName';
+      authToken = loginModel.data!.authToken.toString();
     }
+  }
+
+  Future<void> fetchRescheduledOrders() async {
+    await initializeUser();
+    var headers = {
+      "UserType": userType,
+      "UserName": userName,
+      "UserId": userId,
+      "AuthToken": authToken
+    };
+    var response = await http.get(
+      Uri.parse('https://qaapi.xpindia.in/api/get-rescheduled-orders'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        rescheduledOrders = rescheduleOrdersModelFromJson(response.body);
+        isLoading = false;
+      });
+      print(response.body);
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Unable to Load');
+    }
+  }
+
+  Future<void> fetchPendingOrders(String dateType) async {
+    await initializeUser();
     var headers = {
       "UserType": userType,
       "UserId": userId,
@@ -67,13 +115,10 @@ class _ManageOrdersState extends State<ManageOrders> {
     };
 
     var response = await http.post(
-        Uri.parse(
-            'https://qaapi.xpindia.in/api/get-pending-provisional-orders'),
-        headers: headers,
-        body: body);
-    // print("Status Code: ${response.statusCode}");
-    // print("Response Body: ${response.body}");
-
+      Uri.parse('https://qaapi.xpindia.in/api/get-pending-provisional-orders'),
+      headers: headers,
+      body: body,
+    );
     if (response.statusCode == 200) {
       setState(() {
         pendingOrders = pendingProvisionalModelFromJson(response.body);
@@ -97,6 +142,8 @@ class _ManageOrdersState extends State<ManageOrders> {
       backgroundColor: newCardBG,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        centerTitle: true,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           title,
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -106,26 +153,34 @@ class _ManageOrdersState extends State<ManageOrders> {
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Column(
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                padding: EdgeInsets.all(screenWidth * 0.02),
-                child: Row(
-                  children: [
-                    _optionCardBuilder(
-                        'lib/assets/icons/pending.png',
-                        screenHeight,
-                        screenWidth,
-                        'Pending Provisional Orders'),
-                    _optionCardBuilder('lib/assets/icons/cancel.png',
-                        screenHeight, screenWidth, 'Reschedule/Cancel Orders'),
-                    _optionCardBuilder('lib/assets/icons/allocate.png',
-                        screenHeight, screenWidth, 'Allocate Vehicle to Order'),
-                    _optionCardBuilder('lib/assets/icons/cancel.png',
-                        screenHeight, screenWidth, 'Revise/Cancel Allocation'),
-                  ],
-                ),
+            Container(
+              width: screenWidth,
+              padding: EdgeInsets.only(
+                  left: screenWidth * 0.05, right: screenWidth * 0.07),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                color: Colors.white,
               ),
+              child: DropdownButton(
+                  isExpanded: true,
+                  underline: SizedBox(),
+                  icon: Icon(Icons.arrow_drop_down_circle_rounded),
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  value: selectedOption,
+                  items: optionsList.map((String items) {
+                    return DropdownMenuItem(
+                      value: items,
+                      child: Text(items),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedOption = newValue!;
+                    });
+                    fetchOrders(selectedOption);
+                    /////////////////////////
+                  }),
             ),
             SizedBox(height: screenHeight * 0.01),
             TextField(
@@ -206,10 +261,16 @@ class _ManageOrdersState extends State<ManageOrders> {
   }
 
   Widget next7DaysList(double screenHeight, double screenWidth) {
+    var data;
+    if (selectedOption == 'Pending/Provisional Orders') {
+      data = pendingOrders?.data.provisionalOrdersList;
+    } else if (selectedOption == 'Reschedule/Cancel Orders') {
+      data = rescheduledOrders?.data;
+    }
     return ListView.builder(
-        itemCount: pendingOrders?.data.provisionalOrdersList.length ?? 0,
+        itemCount: data.toString().length ?? 0,
         itemBuilder: (context, index) {
-          final orders = pendingOrders!.data.provisionalOrdersList[index];
+          final orders = data![index];
           return Padding(
             padding: EdgeInsets.all(5),
             child: Container(
@@ -229,9 +290,140 @@ class _ManageOrdersState extends State<ManageOrders> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Flexible(
+                        child: Text(
+                          '${orders.customerName}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.005,
+                  ),
+                  Divider(
+                    color: Colors.lightBlueAccent.withOpacity(0.25),
+                    height: screenHeight * 0.01,
+                    indent: screenWidth * 0.04,
+                    endIndent: screenWidth * 0.04,
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.005,
+                  ),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Branch:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 14,
+                                color: CupertinoColors.black.withOpacity(0.5),
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.02),
+                            Text(
+                              '${orders.branchName}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: CupertinoColors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.005),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                infoRowLeft(
+                                    'Order Id', '${orders.orderIdCode}'),
+                                SizedBox(
+                                  height: screenHeight * 0.01,
+                                ),
+                                infoRowLeft(
+                                    'Payment Mode',
+                                    orders.paymentMode
+                                        .toString()
+                                        .split('.')
+                                        .last)
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                infoRowCenter(
+                                    'Service Type',
+                                    orders.serviceType
+                                        .toString()
+                                        .split('.')
+                                        .last),
+                                SizedBox(
+                                  height: screenHeight * 0.01,
+                                ),
+                                infoRowCenter('Pickup Date',
+                                    formatDate(orders.pickupDate.toString())),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                infoRowRight(
+                                    'Vehicle Type',
+                                    orders.vehicleType
+                                        .toString()
+                                        .split('.')
+                                        .last),
+                                SizedBox(
+                                  height: screenHeight * 0.01,
+                                ),
+                                infoRowRight('Pickup Time',
+                                    formatTime(orders.pickupDate.toString())),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.005,
+                  ),
+                  Divider(
+                    color: Colors.lightBlueAccent.withOpacity(0.25),
+                    height: screenHeight * 0.01,
+                    indent: screenWidth * 0.04,
+                    endIndent: screenWidth * 0.04,
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.005,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        '${orders.customerName}',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        'Route:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.normal,
+                          fontSize: 14,
+                          color: CupertinoColors.black.withOpacity(0.5),
+                        ),
+                      ),
+                      SizedBox(
+                        width: screenWidth * 0.02,
+                      ),
+                      Text(
+                        '${orders.from} - ${orders.to}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: CupertinoColors.black,
+                        ),
                       )
                     ],
                   ),
@@ -241,34 +433,15 @@ class _ManageOrdersState extends State<ManageOrders> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      infoRow('Order Id', '${orders.orderIdCode}'),
-                      infoRow('Service Type', '${orders.serviceType}'),
-                      infoRow('Origin', '${orders.from}')
-                    ],
-                  ),
-                  SizedBox(
-                    height: screenHeight * 0.01,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      infoRow('Service Type', '${orders.serviceType}'),
-                      infoRow('Vehicle Type', '${orders.vehicleType}'),
-                      infoRow('Destination', '${orders.to}')
-                    ],
-                  ),
-                  SizedBox(
-                    height: screenHeight * 0.01,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
                       Container(
-                        padding: EdgeInsets.all(screenWidth * 0.01),
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenWidth * 0.01,
+                          horizontal: screenWidth * 0.02,
+                        ),
                         decoration: BoxDecoration(
+                          color: Colors.red.shade700,
                           borderRadius:
                               BorderRadius.circular(screenWidth * 0.02),
-                          color: Colors.red,
                         ),
                         child: Text(
                           'Reject',
@@ -277,18 +450,21 @@ class _ManageOrdersState extends State<ManageOrders> {
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.all(screenWidth * 0.01),
+                        padding: EdgeInsets.symmetric(
+                          vertical: screenWidth * 0.01,
+                          horizontal: screenWidth * 0.02,
+                        ),
                         decoration: BoxDecoration(
+                          color: Colors.blue.shade900,
                           borderRadius:
                               BorderRadius.circular(screenWidth * 0.02),
-                          color: Colors.blue.shade900,
                         ),
                         child: Text(
                           'Confirm',
                           style: TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                      ),
+                      )
                     ],
                   )
                 ],
@@ -298,41 +474,11 @@ class _ManageOrdersState extends State<ManageOrders> {
         });
   }
 
-  Widget _optionCardBuilder(
-      String assetPath, double screenHeight, double screenWidth, String title) {
-    return Container(
-        padding: EdgeInsets.all(screenWidth * 0.02),
-        margin: EdgeInsets.only(right: screenWidth * 0.033),
-        width: screenHeight * 0.15,
-        height: screenHeight * 0.15,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(screenWidth * 0.05),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              offset: Offset(0, 4),
-              blurRadius: 5,
-              color: Colors.black26,
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.asset(
-              assetPath,
-              height: screenHeight * 0.05,
-            ),
-            Center(child: Text(title))
-          ],
-        ));
-  }
-
-  Widget infoRow(String label, String value,
+  Widget infoRowLeft(String label, String value,
       {TextStyle? labelStyle, TextStyle? valueStyle}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -356,5 +502,84 @@ class _ManageOrdersState extends State<ManageOrders> {
         )
       ],
     );
+  }
+
+  Widget infoRowCenter(String label, String value,
+      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: labelStyle ??
+              TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+                color: CupertinoColors.black.withOpacity(0.5),
+              ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: valueStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: CupertinoColors.black,
+                ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget infoRowRight(String label, String value,
+      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: labelStyle ??
+              TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+                color: CupertinoColors.black.withOpacity(0.5),
+              ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: valueStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: CupertinoColors.black,
+                ),
+          ),
+        )
+      ],
+    );
+  }
+
+  String formatDate(String dateTime) {
+    try {
+      DateTime parsedDate = DateTime.parse(dateTime);
+      return DateFormat('yyyy-MM-dd').format(parsedDate); // Returns date only
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  }
+
+  String formatTime(String dateTime) {
+    try {
+      DateTime parsedDate = DateTime.parse(dateTime);
+      return DateFormat('hh:mm a')
+          .format(parsedDate); // Returns time in hh:mm AM/PM
+    } catch (e) {
+      return 'Invalid Time';
+    }
   }
 }

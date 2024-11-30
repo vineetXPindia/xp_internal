@@ -129,7 +129,7 @@ class ProvisionalOrdersList {
   String? vehicleType;
   // dynamic allocatedVehicleType;
   // dynamic paymentModeId;
-  // PaymentMode paymentMode;
+  PaymentMode paymentMode;
   // bool isConfirmed;
   // bool isRejected;
   DateTime lbPublishedDate;
@@ -191,7 +191,7 @@ class ProvisionalOrdersList {
     required this.vehicleType,
     // required this.allocatedVehicleType,
     // required this.paymentModeId,
-    // required this.paymentMode,
+    required this.paymentMode,
     // required this.isConfirmed,
     // required this.isRejected,
     required this.lbPublishedDate,
@@ -255,7 +255,7 @@ class ProvisionalOrdersList {
         vehicleType: json["VehicleType"],
         // allocatedVehicleType: json["AllocatedVehicleType"],
         // paymentModeId: json["PaymentModeId"],
-        // paymentMode: paymentModeValues.map[json["PaymentMode"]]!,
+        paymentMode: paymentModeValues.map[json["PaymentMode"]]!,
         // isConfirmed: json["IsConfirmed"],
         // isRejected: json["IsRejected"],
         lbPublishedDate: DateTime.parse(json["LBPublishedDate"]),
