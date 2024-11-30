@@ -36,9 +36,7 @@ class RescheduleOrdersModel {
   Map<String, dynamic> toJson() => {
         "Message": message,
         "Success": success,
-        "Data": data == null
-            ? []
-            : List<dynamic>.from(data!.map((x) => x.toJson())),
+        "Data": List<dynamic>.from(data!.map((x) => x.toJson())),
         "Code": code,
       };
 }

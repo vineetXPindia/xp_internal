@@ -263,14 +263,52 @@ class _ManageOrdersState extends State<ManageOrders> {
   Widget next7DaysList(double screenHeight, double screenWidth) {
     var data;
     if (selectedOption == 'Pending/Provisional Orders') {
-      data = pendingOrders?.data.provisionalOrdersList;
+      data = pendingOrders?.data.provisionalOrdersList ?? []; ////fix this
     } else if (selectedOption == 'Reschedule/Cancel Orders') {
-      data = rescheduledOrders?.data;
+      data = rescheduledOrders?.data ?? [];
     }
+    String getServiceTypeName(ServiceType serviceType) {
+      // Find the key (string name) that corresponds to the given enum value
+      return serviceTypeValues.map.keys.firstWhere(
+        (key) => serviceTypeValues.map[key] == serviceType,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
+    String getVehicleTypeName(VehicleTypeName vehicleTypeName) {
+      // Find the key (string name) that corresponds to the given enum value
+      return vehicleTypeNameValues.map.keys.firstWhere(
+        (key) => vehicleTypeNameValues.map[key] == vehicleTypeName,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
+    String getBranchName(Branch branchName) {
+      // Find the key (string name) that corresponds to the given enum value
+      return branchValues.map.keys.firstWhere(
+        (key) => branchValues.map[key] == branchName,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
     return ListView.builder(
-        itemCount: data.toString().length ?? 0,
+        itemCount: data.length ?? 0,
         itemBuilder: (context, index) {
-          final orders = data![index];
+          final orders = data[index]; ////help me get it fixed
+          String serviceType = "";
+          String vehicleTypeName = "";
+          String branch = "";
+          if (selectedOption == 'Reschedule/Cancel Orders') {
+            serviceType = getServiceTypeName(orders.serviceType);
+            vehicleTypeName = getVehicleTypeName(orders.vehicleType);
+            branch = orders.branchName != null
+                ? getBranchName(orders.branchName!)
+                : " ";
+          } else {
+            serviceType = orders.serviceType;
+            vehicleTypeName = orders.vehicleType;
+            branch = orders.branchName;
+          }
           return Padding(
             padding: EdgeInsets.all(5),
             child: Container(
@@ -327,7 +365,7 @@ class _ManageOrdersState extends State<ManageOrders> {
                             ),
                             SizedBox(width: screenWidth * 0.02),
                             Text(
-                              '${orders.branchName}',
+                              branch,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -358,12 +396,7 @@ class _ManageOrdersState extends State<ManageOrders> {
                             ),
                             Column(
                               children: [
-                                infoRowCenter(
-                                    'Service Type',
-                                    orders.serviceType
-                                        .toString()
-                                        .split('.')
-                                        .last),
+                                infoRowCenter('Service Type', serviceType),
                                 SizedBox(
                                   height: screenHeight * 0.01,
                                 ),
@@ -373,12 +406,7 @@ class _ManageOrdersState extends State<ManageOrders> {
                             ),
                             Column(
                               children: [
-                                infoRowRight(
-                                    'Vehicle Type',
-                                    orders.vehicleType
-                                        .toString()
-                                        .split('.')
-                                        .last),
+                                infoRowRight('Vehicle Type', vehicleTypeName),
                                 SizedBox(
                                   height: screenHeight * 0.01,
                                 ),
