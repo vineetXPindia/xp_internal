@@ -255,7 +255,8 @@ class ProvisionalOrdersList {
         vehicleType: json["VehicleType"],
         // allocatedVehicleType: json["AllocatedVehicleType"],
         // paymentModeId: json["PaymentModeId"],
-        paymentMode: paymentModeValues.map[json["PaymentMode"]]!,
+        paymentMode:
+            paymentModeValues.map[json["PaymentMode"]] ?? PaymentMode.CREDIT,
         // isConfirmed: json["IsConfirmed"],
         // isRejected: json["IsRejected"],
         lbPublishedDate: DateTime.parse(json["LBPublishedDate"]),

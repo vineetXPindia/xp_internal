@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/login_model.dart';
-import 'package:xp_internal/models/pending_provisional_model.dart';
+import 'package:xp_internal/models/pending_provisional_model.dart'
+    as provisional;
 import 'package:http/http.dart' as http;
 
 import '../../models/manage_orders/reschedule_orders_model.dart';
@@ -27,7 +28,7 @@ class _ManageOrdersState extends State<ManageOrders> {
     'Revise/Cancel Allocation'
   ];
   List<bool> selectedToggle = <bool>[true, false];
-  PendingProvisionalModel? pendingOrders;
+  provisional.PendingProvisionalModel? pendingOrders;
   RescheduleOrdersModel? rescheduledOrders;
   bool isLoading = true;
   late String userType;
@@ -36,15 +37,18 @@ class _ManageOrdersState extends State<ManageOrders> {
   late String userName;
   late String firstName;
   late String lastName;
+  String dateType = "7 Days";
 
   @override
   void initState() {
     super.initState();
-    fetchPendingOrders("7 Days");
+    fetchPendingOrders(dateType);
   }
 
-  Future<void> fetchOrders(String selectedOption) async {
-    if (selectedOption == 'Reschedule/Cancel Orders') {
+  Future<void> fetchOrders(String selectedOption, String dateType) async {
+    if (selectedOption == 'Pending/Provisional Orders') {
+      fetchPendingOrders(dateType);
+    } else if (selectedOption == 'Reschedule/Cancel Orders') {
       fetchRescheduledOrders();
     }
   }
@@ -121,7 +125,8 @@ class _ManageOrdersState extends State<ManageOrders> {
     );
     if (response.statusCode == 200) {
       setState(() {
-        pendingOrders = pendingProvisionalModelFromJson(response.body);
+        pendingOrders =
+            provisional.pendingProvisionalModelFromJson(response.body);
         isLoading = false;
       });
     } else {
@@ -137,7 +142,7 @@ class _ManageOrdersState extends State<ManageOrders> {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
     String title = 'Manage FCL Orders';
-
+    String dateType = "7 Days";
     return Scaffold(
       backgroundColor: newCardBG,
       appBar: AppBar(
@@ -178,7 +183,7 @@ class _ManageOrdersState extends State<ManageOrders> {
                     setState(() {
                       selectedOption = newValue!;
                     });
-                    fetchOrders(selectedOption);
+                    fetchOrders(selectedOption, dateType);
                     /////////////////////////
                   }),
             ),
@@ -198,40 +203,43 @@ class _ManageOrdersState extends State<ManageOrders> {
               ),
             ),
             SizedBox(height: screenHeight * 0.02),
-            Container(
-              padding: EdgeInsets.all(screenWidth * 0.015),
-              child: LayoutBuilder(
-                builder: (context, constraints) => ToggleButtons(
-                  constraints: BoxConstraints.expand(width: screenWidth * 0.4),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(screenWidth * 0.04),
-                  ),
-                  textStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                    fontSize: screenWidth * 0.04,
-                  ),
-                  selectedColor: Colors.white,
-                  fillColor: Colors.blue.shade900,
-                  color: Colors.black,
-                  isSelected: selectedToggle,
-                  children: <Widget>[
-                    Text('Next 7 Days'),
-                    Text('Beyond 7 Days'),
-                  ],
-                  onPressed: (int index) {
-                    pendingOrders = null;
-                    setState(() {
-                      for (int i = 0; i < selectedToggle.length; i++) {
-                        selectedToggle[i] = i == index;
-                      }
-                      fetchPendingOrders(
-                          index == 0 ? "7 Days" : "Beyond 7 Days");
-                    });
-                  },
-                ),
-              ),
-            ),
+            selectedOption == 'Pending/Provisional Orders'
+                ? Container(
+                    padding: EdgeInsets.all(screenWidth * 0.015),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => ToggleButtons(
+                        constraints:
+                            BoxConstraints.expand(width: screenWidth * 0.4),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(screenWidth * 0.04),
+                        ),
+                        textStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          fontSize: screenWidth * 0.04,
+                        ),
+                        selectedColor: Colors.white,
+                        fillColor: Colors.blue.shade900,
+                        color: Colors.black,
+                        isSelected: selectedToggle,
+                        children: <Widget>[
+                          Text('Next 7 Days'),
+                          Text('Beyond 7 Days'),
+                        ],
+                        onPressed: (int index) {
+                          pendingOrders = null;
+                          setState(() {
+                            for (int i = 0; i < selectedToggle.length; i++) {
+                              selectedToggle[i] = i == index;
+                            }
+                            fetchPendingOrders(
+                                index == 0 ? "7 Days" : "Beyond 7 Days");
+                          });
+                        },
+                      ),
+                    ),
+                  )
+                : SizedBox(),
             isLoading
                 ? Center(
                     child: Container(
@@ -243,16 +251,15 @@ class _ManageOrdersState extends State<ManageOrders> {
                     ),
                   ))
                 : Expanded(
-                    child:
-                        ((pendingOrders?.data.provisionalOrdersList?.length ??
-                                    0) >
-                                0)
-                            ? next7DaysList(screenHeight, screenWidth)
-                            : Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.blue.shade900,
-                                ),
-                              ),
+                    child: ((pendingOrders?.data.provisionalOrdersList.length ??
+                                0) >
+                            0)
+                        ? next7DaysList(screenHeight, screenWidth)
+                        : Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
                   ),
           ],
         ),
@@ -283,10 +290,32 @@ class _ManageOrdersState extends State<ManageOrders> {
       );
     }
 
+    String getPaymentMode(VehicleTypeName vehicleTypeName) {
+      // Find the key (string name) that corresponds to the given enum value
+      return vehicleTypeNameValues.map.keys.firstWhere(
+        (key) => vehicleTypeNameValues.map[key] == vehicleTypeName,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
     String getBranchName(Branch branchName) {
       // Find the key (string name) that corresponds to the given enum value
       return branchValues.map.keys.firstWhere(
         (key) => branchValues.map[key] == branchName,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
+    // String getPaymentModeName(provisional.PaymentMode paymentMode) {
+    //   return paymentModeValues.map.keys.firstWhere(
+    //     (key) => paymentModeValues.map[key] == paymentMode,
+    //     orElse: () => " ", // Fallback if no match is found
+    //   );
+    // }
+
+    String getPaymentModeNameReschedule(PaymentMode paymentMode) {
+      return paymentModeValues.map.keys.firstWhere(
+        (key) => paymentModeValues.map[key] == paymentMode,
         orElse: () => " ", // Fallback if no match is found
       );
     }
@@ -298,16 +327,20 @@ class _ManageOrdersState extends State<ManageOrders> {
           String serviceType = "";
           String vehicleTypeName = "";
           String branch = "";
+          String paymentMode = "";
+
           if (selectedOption == 'Reschedule/Cancel Orders') {
             serviceType = getServiceTypeName(orders.serviceType);
             vehicleTypeName = getVehicleTypeName(orders.vehicleType);
             branch = orders.branchName != null
                 ? getBranchName(orders.branchName!)
                 : " ";
+            paymentMode = getPaymentModeNameReschedule(orders.paymentMode);
           } else {
             serviceType = orders.serviceType;
             vehicleTypeName = orders.vehicleType;
             branch = orders.branchName;
+            paymentMode = orders.paymentMode.toString().split('.').last;
           }
           return Padding(
             padding: EdgeInsets.all(5),
@@ -386,12 +419,7 @@ class _ManageOrdersState extends State<ManageOrders> {
                                 SizedBox(
                                   height: screenHeight * 0.01,
                                 ),
-                                infoRowLeft(
-                                    'Payment Mode',
-                                    orders.paymentMode
-                                        .toString()
-                                        .split('.')
-                                        .last)
+                                infoRowLeft('Payment Mode', paymentMode)
                               ],
                             ),
                             Column(
