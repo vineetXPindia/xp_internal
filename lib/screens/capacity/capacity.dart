@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
@@ -324,6 +325,7 @@ class _CapacityPageState extends State<CapacityPage> {
 
   Widget displayCapacity(double screenHeight, double screenWidth) {
     List<dynamic>? data;
+    bool capacityAvailable;
     if (selectedCapacity == 'Available Capacity') {
       data = availableCapacity?.data;
     } else if (selectedCapacity == 'Capacity at Unloading') {
@@ -332,77 +334,205 @@ class _CapacityPageState extends State<CapacityPage> {
       data = futureCapacity?.data;
     }
     return ListView.builder(
-        itemCount: data?.length ?? 0,
-        itemBuilder: (context, index) {
-          // var res = selectedValue == 'Available Capacity' ? availableCapacity?.data![index] : capacityAtUnloading?.data![index];
-          return Padding(
-            padding: EdgeInsets.all(screenWidth * 0.02),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                  vertical: screenHeight * 0.02,
-                  horizontal: screenWidth * 0.01),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                        offset: Offset(0, 3),
-                        color: Colors.black26,
-                        blurRadius: 5)
-                  ]),
-              child: Column(
-                children: [
-                  infoRow('Branch', '${data?[index].branch}'),
-                  infoRow('FFV Name', '${data?[index].ffvName}'),
-                  infoRow('Capacity Type', '${data?[index].capacityType}'),
-                  infoRow('Vehicle Type', '${data?[index].vehicleType}'),
-                  infoRow('Vehicle No.', '${data?[index].vehicleNumber}'),
-                  infoRow(
-                    "Location",
-                    data?[index].currentLocation ?? " ",
+      itemCount: data?.length ?? 0,
+      itemBuilder: (context, index) {
+        // var res = selectedValue == 'Available Capacity' ? availableCapacity?.data![index] : capacityAtUnloading?.data![index];
+        return Padding(
+          padding: EdgeInsets.all(screenWidth * 0.02),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.02, horizontal: screenWidth * 0.01),
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                      offset: Offset(0, 3),
+                      color: Colors.black26,
+                      blurRadius: 5)
+                ]),
+            child: Column(
+              children: [
+                infoRow(
+                  screenWidth,
+                  screenHeight,
+                  "FFV Name",
+                  '${data?[index].ffvName}',
+                ),
+                SizedBox(
+                  height: screenHeight * 0.005,
+                ),
+                Divider(
+                  color: Colors.lightBlueAccent.withOpacity(0.25),
+                  height: screenHeight * 0.01,
+                  indent: screenWidth * 0.04,
+                  endIndent: screenWidth * 0.04,
+                ),
+                SizedBox(
+                  height: screenHeight * 0.005,
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          infoRowLeft('Branch', '${data?[index].branch}'),
+                          infoRowLeft(
+                              'Capacity Type', '${data?[index].capacityType}'),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          infoRowRight(
+                              'Vehicle Type', '${data?[index].vehicleType}'),
+                          infoRowRight('Vehicle Number',
+                              '${data?[index].vehicleNumber}'),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(
+                  height: screenHeight * 0.005,
+                ),
+                Divider(
+                  color: Colors.lightBlueAccent.withOpacity(0.25),
+                  height: screenHeight * 0.01,
+                  indent: screenWidth * 0.04,
+                  endIndent: screenWidth * 0.04,
+                ),
+                SizedBox(
+                  height: screenHeight * 0.005,
+                ),
+                infoRow(
+                  screenWidth,
+                  screenHeight,
+                  'Location',
+                  '${data?[index].currentLocation ?? "Not Available"}',
+                ),
+                selectedCapacity == 'Available Capacity'
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.02),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Status:',
+                              style: TextStyle(
+                                  color: CupertinoColors.black.withOpacity(0.5),
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(
+                              width: screenWidth * 0.02,
+                            ),
+                            Text(
+                              data?[index].isCapacityAvailable
+                                  ? 'Active'
+                                  : 'Inactive',
+                              style: TextStyle(
+                                color: data?[index].isCapacityAvailable
+                                    ? Colors.green.shade600
+                                    : Colors.red.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox(),
+              ],
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 
-  Widget infoRow(String label, String title) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.only(left: 5, bottom: 2),
-              width: 110,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.black38),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
+  Widget infoRow(
+      double screenWidth, double screenHeight, String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+                color: CupertinoColors.black.withOpacity(0.5),
+                fontWeight: FontWeight.bold),
+          ),
+          SizedBox(
+            width: screenWidth * 0.02,
+          ),
+          Flexible(
               child: Text(
-                title,
-                style:
-                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            value,
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget infoRowLeft(String label, String value,
+      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: labelStyle ??
+              TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+                color: CupertinoColors.black.withOpacity(0.5),
               ),
-            ),
-          ],
         ),
-        Divider(
-          height: 5,
-          thickness: 1,
-          indent: 10,
-          endIndent: 10,
-          color: Colors.grey.withOpacity(0.2),
+        Flexible(
+          child: Text(
+            value,
+            style: valueStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: CupertinoColors.black,
+                ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget infoRowRight(String label, String value,
+      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: labelStyle ??
+              TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+                color: CupertinoColors.black.withOpacity(0.5),
+              ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: valueStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: CupertinoColors.black,
+                ),
+          ),
         )
       ],
     );

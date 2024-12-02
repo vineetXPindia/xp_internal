@@ -306,13 +306,6 @@ class _ManageOrdersState extends State<ManageOrders> {
       );
     }
 
-    // String getPaymentModeName(provisional.PaymentMode paymentMode) {
-    //   return paymentModeValues.map.keys.firstWhere(
-    //     (key) => paymentModeValues.map[key] == paymentMode,
-    //     orElse: () => " ", // Fallback if no match is found
-    //   );
-    // }
-
     String getPaymentModeNameReschedule(PaymentMode paymentMode) {
       return paymentModeValues.map.keys.firstWhere(
         (key) => paymentModeValues.map[key] == paymentMode,

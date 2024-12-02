@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/login_model.dart';
@@ -18,7 +19,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? lastName;
   String? email;
   String? phoneNumber;
-  String? dateOfJoining;
+  DateTime? dateOfJoining;
+  DateTime? dateOfBirth;
 
   @override
   void initState() {
@@ -46,6 +48,8 @@ class _ProfilePageState extends State<ProfilePage> {
         lastName = loginModel.data?.lastName;
         email = loginModel.data?.email;
         phoneNumber = loginModel.data?.phone;
+        dateOfJoining = loginModel.data?.dateOfJoining;
+        dateOfBirth = loginModel.data?.dateOfBirth;
       });
     }
   }
@@ -151,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Container(
-          padding: EdgeInsets.all(screenWidth * 0.02),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
@@ -165,16 +169,36 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           child: Column(
             children: [
-              infoRow('First Name', firstName, screenHeight, screenWidth),
-              infoRow('Last Name', lastName, screenHeight, screenWidth),
-              infoRow('Email', email, screenHeight, screenWidth),
-              infoRow('Phone Number', phoneNumber, screenHeight, screenWidth),
-              infoRow('Date of Joining', "", screenHeight, screenWidth),
+              infoRow(
+                  screenHeight, screenWidth, 'Name', '$firstName $lastName'),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              infoRow(screenHeight, screenWidth, 'Email', '$email'),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              infoRow(
+                  screenHeight, screenWidth, 'Phone Number', '$phoneNumber'),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              infoRow(screenHeight, screenWidth, 'Date of Birth',
+                  '${dateOfBirth ?? " "}'),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              infoRow(
+                screenHeight,
+                screenWidth,
+                'Date of Joining',
+                DateFormat('dd-MM-yyyy').format(dateOfJoining!),
+              ),
             ],
           ),
         ),
         SizedBox(
-          height: screenHeight * 0.04,
+          height: screenHeight * 0.03,
         ),
         GestureDetector(
           onTap: () async {
@@ -200,27 +224,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget infoRow(
-      String label, String? value, double screenHeight, double screenWidth) {
-    return Container(
-      margin: EdgeInsets.only(bottom: screenHeight * 0.03),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "$label:",
-            style: const TextStyle(
-              fontSize: 16,
+      double screenHeight, double screenWidth, String title, String value) {
+    return Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: screenWidth * 0.03,
+                color: Colors.black38,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          Text(
-            value ?? "",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: screenWidth * 0.04,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          ],
+        ),
+      ],
     );
   }
 }
