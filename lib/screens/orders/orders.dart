@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/screens/orders/book_new_order.dart';
+import 'package:xp_internal/screens/orders/manage_lcl_orders.dart';
 import 'package:xp_internal/screens/orders/manage_orders.dart';
 import '../../widgets/top_bar.dart';
 
@@ -82,8 +83,13 @@ class _OrdersPageState extends State<OrdersPage> {
             ),
             GestureDetector(
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => ManageOrders()));
+                selectedService[0]
+                    ? Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => ManageOrders()))
+                    : Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ManageLclOrders()));
               },
               child: _cardBuilder('Manage Orders',
                   'lib/assets/icons/manage.png', screenHeight, screenWidth),
