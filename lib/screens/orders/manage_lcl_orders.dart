@@ -6,6 +6,7 @@ import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/login_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:xp_internal/models/manage_orders/lcl/lcl_reschedule_manage_model.dart';
+import 'package:xp_internal/models/manage_orders/lcl/lcl_revise_allocation.dart';
 import 'package:xp_internal/models/manage_orders/reschedule_orders_model.dart';
 
 class ManageLclOrders extends StatefulWidget {
@@ -16,6 +17,11 @@ class ManageLclOrders extends StatefulWidget {
 }
 
 class _ManageLclOrdersState extends State<ManageLclOrders> {
+  String selectedOption = 'Reschedule/Cancellation Orders';
+  List<String> optionsList = [
+    'Reschedule/Cancellation Orders',
+    'Revise/Cancel Allocation',
+  ];
   List<bool> selectedToggle = <bool>[true, false];
   late String userId;
   late String userType;
@@ -25,6 +31,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
   late String lastName;
 
   LclRescheduleModel? rescheduleOrdersLcl;
+  LclReviseAllocationModel? reviseAllocation;
   bool isLoading = true;
   @override
   void initState() {
@@ -48,6 +55,47 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     }
   }
 
+  Future<void> getOrders() async {
+    if (selectedOption == 'Reschedule/Cancellation Orders') {
+      getRescheduleOrders();
+    } else if (selectedOption == 'Revise/Cancel Allocation') {
+      getReviseAllocationOrders();
+    }
+  }
+
+  Future<void> getReviseAllocationOrders() async {
+    await initializeUser();
+    var headers = {
+      "UserId": userId,
+      "UserName": userName,
+      "UserType": userType,
+      "AuthToken": authToken,
+    };
+    var body = {
+      "StartIndex": '${1}',
+      "EndIndex": '${5}',
+      "Manifest": "",
+    };
+    var response = await http.post(
+      Uri.parse('https://qaapi.xpindia.in/api/get-lcl-for-revise-allocation'),
+      headers: headers,
+      body: body,
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        reviseAllocation = lclReviseAllocationModelFromJson(response.body);
+        print(response.statusCode);
+        print(response.body);
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Unable to load');
+    }
+  }
+
   Future<void> getRescheduleOrders() async {
     await initializeUser();
     var headers = {
@@ -56,14 +104,14 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
       "AuthToken": authToken,
       "UserName": userName
     };
-    var body = {
-      "int_start_index": "0",
-      "int_end_index": "20",
+    Map<String, String?> body = {
+      "int_start_index": "${0}",
+      "int_end_index": "${20}",
       "dt_from_date": "",
       "dt_to_date": "",
       "FilterType": "YTD",
-      "vc_filter_by": "",
-      "vc_keyword": ""
+      "vc_filter_by": "${null}",
+      "vc_keyword": "${null}"
     };
     var response = await http.post(
       Uri.parse(
@@ -85,6 +133,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
@@ -104,28 +153,43 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Column(
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Container(
-                padding: EdgeInsets.all(screenWidth * 0.02),
-                child: Row(
-                  children: [
-                    _optionCardBuilder(screenHeight, screenWidth,
-                        'Pending Provisional Orders'),
-                    _optionCardBuilder(
-                        screenHeight, screenWidth, 'Reschedule/Cancel Orders'),
-                    _optionCardBuilder(
-                        screenHeight, screenWidth, 'Allocate Vehicle to Order'),
-                    _optionCardBuilder(
-                        screenHeight, screenWidth, 'Revise/Cancel Allocation'),
-                  ],
-                ),
+            Container(
+              width: screenWidth,
+              padding: EdgeInsets.only(
+                  left: screenWidth * 0.05, right: screenWidth * 0.07),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                color: Colors.white,
               ),
+              child: DropdownButton(
+                  isExpanded: true,
+                  underline: SizedBox(),
+                  icon: Icon(Icons.arrow_drop_down_circle_rounded),
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  value: selectedOption,
+                  items: optionsList.map((String items) {
+                    return DropdownMenuItem(
+                      value: items,
+                      child: Text(items),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedOption = newValue!;
+                    });
+                    getOrders();
+                    /////////////////////////
+                  }),
             ),
             SizedBox(
               height: screenHeight * 0.01,
             ),
             TextField(
+              cursorColor: Colors.blue.shade900,
+              onTapOutside: (event) {
+                FocusScope.of(context).unfocus();
+              },
               decoration: InputDecoration(
                 icon: Icon(Icons.search),
                 hintText: 'Search by Order id/ Location or Vehicle Type',
@@ -161,29 +225,29 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     );
   }
 
-  Widget _optionCardBuilder(
-      double screenHeight, double screenWidth, String title) {
-    return Container(
-      padding: EdgeInsets.all(screenWidth * 0.01),
-      margin: EdgeInsets.only(right: screenWidth * 0.033),
-      width: screenHeight * 0.13,
-      height: screenHeight * 0.13,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(screenWidth * 0.05),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            offset: Offset(0, 4),
-            blurRadius: 5,
-            color: Colors.black26,
-          )
-        ],
-      ),
-      child: Center(
-        child: Text(title),
-      ),
-    );
-  }
+  // Widget _optionCardBuilder(
+  //     double screenHeight, double screenWidth, String title) {
+  //   return Container(
+  //     padding: EdgeInsets.all(screenWidth * 0.01),
+  //     margin: EdgeInsets.only(right: screenWidth * 0.033),
+  //     width: screenHeight * 0.13,
+  //     height: screenHeight * 0.13,
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(screenWidth * 0.05),
+  //       color: Colors.white,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           offset: Offset(0, 4),
+  //           blurRadius: 5,
+  //           color: Colors.black26,
+  //         )
+  //       ],
+  //     ),
+  //     child: Center(
+  //       child: Text(title),
+  //     ),
+  //   );
+  // }
 
   Widget dataList(double screenHeight, double screenWidth) {
     var data = rescheduleOrdersLcl?.data;
@@ -204,13 +268,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     return ListView.builder(
         itemCount: data?.length ?? 0,
         itemBuilder: (context, index) {
-          final orders = data?[index]; ////help me get it fixed
-          // String? serviceType = orders?.vcServiceType;
-          // String? vehicleTypeName = orders?.vcVehicleType;
-          // String? branch = orders?.vcBranch;
-          // String? customerName = orders?.vcCustomerName;
-          // String paymentMode = orders?.;
-
+          final orders = data?[index];
           return Padding(
             padding: EdgeInsets.all(5),
             child: Container(
@@ -255,17 +313,16 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
                             infoRowLeft('Pickup Date',
                                 formatDate(orders!.dtPickUpDate.toString())),
                             infoRowLeft(
-                                'Vehicle Type', '${orders?.vcVehicleType}')
+                                'Vehicle Type', '${orders.vcVehicleType}')
                           ],
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             infoRowRight('Service Type',
-                                orders?.vcOrderType ?? "Not Available"),
+                                orders.vcOrderType ?? "Not Available"),
                             infoRowRight('Pickup Window', 'pickup_window'),
-                            infoRowRight(
-                                'Payment Mode', '${orders?.vcPocName}'),
+                            infoRowRight('Payment Mode', '${orders.vcPocName}'),
                           ],
                         )
                       ],
@@ -283,7 +340,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
                       height: screenHeight * 0.005,
                     ),
                     infoRow(screenWidth, screenHeight, 'Route:',
-                        '${orders?.vcPickupLocation}'),
+                        '${orders.vcPickupLocation}'),
                     infoRow(screenWidth, screenHeight, 'Amount', 'amt'),
                     SizedBox(
                       height: screenHeight * 0.01,

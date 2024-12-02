@@ -45,9 +45,9 @@ class LclRescheduleModel {
 
 class Datum {
   int? totalCount;
-  dynamic intStartIndex;
-  dynamic intEndIndex;
-  dynamic userId;
+  String? intStartIndex;
+  String? intEndIndex;
+  String? userId;
   String? vcBookingId;
   String? vcZone;
   String? vcBranch;
@@ -74,7 +74,7 @@ class Datum {
   DateTime? dtFromDate;
   DateTime? dtToDate;
   String? vcPickupLocation;
-  int? decApproxWeight;
+  double? decApproxWeight;
   String? vcBoxes;
   String? vcXpcns;
   String? vcCapacityType;
@@ -85,7 +85,7 @@ class Datum {
   dynamic dtOldBookingDate;
   dynamic isReschedule;
   String? vcVehicleNo;
-  dynamic filterType;
+  String? filterType;
 
   Datum({
     this.totalCount,
