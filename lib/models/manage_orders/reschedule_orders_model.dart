@@ -124,7 +124,7 @@ class Datum {
         destinationId: json["DestinationId"],
         destination: json["Destination"],
         serviceType: serviceTypeValues.map[json["ServiceType"]],
-        serviceClass: paymentModeValues.map[json["ServiceClass"]]!,
+        // serviceClass: paymentModeValues.map[json["ServiceClass"]]!,
         orderDetailId: json["OrderDetailId"],
         pickupDate: json["PickupDate"] == null
             ? null

@@ -3,9 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/login_model.dart';
 import 'package:xp_internal/screens/capacity/capacity.dart';
-import 'package:xp_internal/screens/orders/book_new_order.dart';
-import 'package:xp_internal/screens/orders/manage_lcl_orders.dart';
-import 'package:xp_internal/screens/orders/manage_orders.dart';
+import 'package:xp_internal/screens/orders/book_new_order/book_new_order.dart';
+import 'package:xp_internal/screens/orders/manage_orders/manage_lcl_orders.dart';
+import 'package:xp_internal/screens/orders/manage_orders/manage_orders.dart';
 import 'package:xp_internal/screens/orders/orders.dart';
 
 import 'package:xp_internal/screens/profile/profile_page.dart';

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:xp_internal/constants/colors.dart';
-import 'package:xp_internal/screens/orders/book_new_order.dart';
-import 'package:xp_internal/screens/orders/manage_lcl_orders.dart';
-import 'package:xp_internal/screens/orders/manage_orders.dart';
-import '../../widgets/top_bar.dart';
+import 'package:xp_internal/screens/orders/book_new_order/book_new_order.dart';
+import 'package:xp_internal/screens/orders/book_new_order/new_order_lcl.dart';
+import 'package:xp_internal/screens/orders/manage_orders/manage_lcl_orders.dart';
+import 'package:xp_internal/screens/orders/manage_orders/manage_orders.dart';
 
 class OrdersPage extends StatefulWidget {
   OrdersPage({super.key});
@@ -75,8 +75,13 @@ class _OrdersPageState extends State<OrdersPage> {
             ),
             GestureDetector(
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => BookNewOrder()));
+                selectedService[0]
+                    ? Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => BookNewOrder()))
+                    : Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => BookNewLclOrder()));
               },
               child: _cardBuilder('Book New Order',
                   'lib/assets/icons/orders.png', screenHeight, screenWidth),

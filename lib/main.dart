@@ -6,8 +6,8 @@ import 'package:xp_internal/screens/capacity/capacity.dart';
 import 'package:xp_internal/screens/home/home.dart';
 
 import 'package:xp_internal/screens/login/login_page.dart';
-import 'package:xp_internal/screens/orders/book_new_order.dart';
-import 'package:xp_internal/screens/orders/manage_orders.dart';
+import 'package:xp_internal/screens/orders/book_new_order/book_new_order.dart';
+import 'package:xp_internal/screens/orders/manage_orders/manage_orders.dart';
 import 'package:xp_internal/screens/orders/orders.dart';
 import 'package:xp_internal/screens/profile/profile_page.dart';
 import 'package:xp_internal/screens/tracking/order_tracking.dart';

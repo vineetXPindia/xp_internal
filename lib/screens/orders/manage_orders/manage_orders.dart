@@ -10,7 +10,7 @@ import 'package:xp_internal/models/pending_provisional_model.dart'
     as provisional;
 import 'package:http/http.dart' as http;
 
-import '../../models/manage_orders/reschedule_orders_model.dart';
+import '../../../models/manage_orders/reschedule_orders_model.dart';
 
 class ManageOrders extends StatefulWidget {
   const ManageOrders({super.key});

@@ -110,7 +110,7 @@ class Datum {
   dynamic destinationLocationBook;
   dynamic destDeliveryGatewayBook;
   dynamic isLoadingTallyEnabled;
-  int? decWeight;
+  double? decWeight;
   dynamic orderType;
   dynamic isReschedule;
   dynamic ffvId;

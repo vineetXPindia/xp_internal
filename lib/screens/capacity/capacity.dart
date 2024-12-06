@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +7,7 @@ import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/Capacity/capacity_at_unloading.dart';
 import 'package:xp_internal/models/Capacity/future_capacity_model.dart';
 import 'package:xp_internal/models/Capacity/available_capacity_model.dart';
+import 'package:xp_internal/models/Capacity/lcl_capacity/get_lcl_capacity.dart';
 import 'package:xp_internal/models/login_model.dart';
 
 import 'package:http/http.dart' as http;
@@ -17,9 +20,12 @@ class CapacityPage extends StatefulWidget {
 }
 
 class _CapacityPageState extends State<CapacityPage> {
+  List<bool> selectedService = <bool>[true, false];
   CapacityModel? availableCapacity;
   CapacityUnloadingModel? capacityAtUnloading;
   FutureCapacityModel? futureCapacity;
+
+  LclCapacityModel? lclCapacity;
   String selectedCapacity = 'Available Capacity';
   var optionsList = [
     'Available Capacity',
@@ -35,6 +41,7 @@ class _CapacityPageState extends State<CapacityPage> {
   void initState() {
     super.initState();
     fetchCapacity();
+    getLclCapacity();
   }
 
   ///////////////////////////
@@ -173,15 +180,51 @@ class _CapacityPageState extends State<CapacityPage> {
     }
   }
 
+  Future<void> getLclCapacity() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await initializeUser();
+    var headers = {
+      "UserId": userId,
+      "UserType": userType,
+      "UserName": userName,
+      "AuthToken": authToken,
+      "Content-Type": "application/json"
+    };
+    var body = jsonEncode({
+      "VehicleType": "",
+      "FFVType": "",
+      "BranchType": "",
+      "IsLclVehicle": true,
+      "ZoneType": "",
+      "Type": 1
+    });
+    var response = await http.post(
+      Uri.parse('https://qaapi.xpindia.in/api/get-capacity'),
+      headers: headers,
+      body: body,
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        isLoading = false;
+        lclCapacity = lclCapacityModelFromJson(response.body);
+        print(response.body);
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Unable to Load');
+    }
+  }
+
   Widget build(BuildContext context) {
     final String title = 'Capacity';
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
-    // Value notifiers to manage state
-    final ValueNotifier<List<bool>> selectedService =
-        ValueNotifier([true, false]);
-    // ValueNotifier<String?> selectedValue = ValueNotifier(null);
-    var itemCount = availableCapacity?.data?.length;
+
+    var itemCount = selectedService[0]
+        ? availableCapacity?.data?.length
+        : lclCapacity?.data?.length;
     if (selectedCapacity == 'Capacity at Unloading') {
       itemCount = capacityAtUnloading?.data?.length;
     } else if (selectedCapacity == 'Future Capacity') {
@@ -210,57 +253,71 @@ class _CapacityPageState extends State<CapacityPage> {
             top: screenHeight * 0.02),
         child: Column(
           children: [
-            ValueListenableBuilder<List<bool>>(
-              valueListenable: selectedService,
-              builder: (context, value, child) {
-                return ToggleButtons(
-                  onPressed: (int index) {
-                    selectedService.value = List.generate(
-                      value.length,
-                      (i) => i == index,
-                    );
-                  },
-                  isSelected: value,
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              child: LayoutBuilder(
+                builder: (context, constraints) => ToggleButtons(
+                  //this toggle is not working
+                  constraints: BoxConstraints.expand(
+                      width: screenWidth * 0.4, height: screenHeight * 0.05),
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(screenWidth * 0.04),
+                  ),
+                  textStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    fontSize: screenWidth * 0.04,
+                  ),
                   selectedColor: Colors.white,
                   fillColor: Colors.blue.shade900.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                  constraints: BoxConstraints(
-                      minHeight: screenHeight * 0.06,
-                      minWidth: screenWidth * 0.4),
-                  children: serviceToggle,
-                );
-              },
+                  color: Colors.black,
+                  isSelected: selectedService,
+                  children: <Widget>[
+                    Text('FCL'),
+                    Text('LCL'),
+                  ],
+                  onPressed: (int index) {
+                    setState(() {
+                      for (int i = 0; i < selectedService.length; i++) {
+                        selectedService[i] = i == index;
+                      }
+                    });
+                  },
+                ),
+              ),
             ),
             SizedBox(
               height: screenHeight * 0.02,
             ),
-            Container(
-              width: screenWidth,
-              padding: EdgeInsets.only(
-                  left: screenWidth * 0.05, right: screenWidth * 0.07),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                color: Colors.white,
-              ),
-              child: DropdownButton(
-                  isExpanded: true,
-                  underline: SizedBox(),
-                  dropdownColor: Colors.white,
-                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  value: selectedCapacity,
-                  items: optionsList.map((String items) {
-                    return DropdownMenuItem(
-                      value: items,
-                      child: Text(items),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedCapacity = newValue!;
-                    });
-                    fetchCapacity();
-                  }),
-            ),
+            selectedService[0]
+                ? Container(
+                    width: screenWidth,
+                    padding: EdgeInsets.only(
+                        left: screenWidth * 0.05, right: screenWidth * 0.07),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                      color: Colors.white,
+                    ),
+                    child: DropdownButton(
+                        isExpanded: true,
+                        underline: SizedBox(),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        value: selectedCapacity,
+                        items: optionsList.map((String items) {
+                          return DropdownMenuItem(
+                            value: items,
+                            child: Text(items),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedCapacity = newValue!;
+                          });
+                          fetchCapacity();
+                        }),
+                  )
+                : SizedBox(),
             Container(
               margin: EdgeInsets.only(top: screenHeight * 0.02),
               height: screenHeight * 0.07,
@@ -315,12 +372,97 @@ class _CapacityPageState extends State<CapacityPage> {
                     ),
                   )
                 : Expanded(
-                    child: displayCapacity(screenHeight, screenWidth),
+                    child: selectedService[0]
+                        ? displayCapacity(screenHeight, screenWidth)
+                        : displayLclCapacity(screenHeight, screenWidth),
                   ),
           ],
         ),
       ),
     );
+  }
+
+  Widget displayLclCapacity(double screenHeight, double screenWidth) {
+    var data = lclCapacity?.data;
+    String getDriverName(DriverName? driverName) {
+      // Find the key (string name) that corresponds to the given enum value
+      return driverNameValues.map.keys.firstWhere(
+        (key) => driverNameValues.map[key] == driverName,
+        orElse: () => " ", // Fallback if no match is found
+      );
+    }
+
+    String getBranchName(Branch? branch) {
+      return branchValues.map.keys.firstWhere(
+          (key) => branchValues.map[key] == branch,
+          orElse: () => " ");
+    }
+
+    return ListView.builder(
+        itemCount: lclCapacity?.data?.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: EdgeInsets.all(screenWidth * 0.02),
+            child: Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                  boxShadow: [
+                    BoxShadow(
+                      offset: Offset(0, 2),
+                      color: Colors.black12,
+                      blurRadius: 5,
+                    )
+                  ]),
+              child: Column(
+                children: [
+                  infoRow(screenWidth, screenHeight, 'Branch: ',
+                      getBranchName(lclCapacity?.data![index].branch)),
+                  infoRow(screenWidth, screenHeight, 'FFV Name: ',
+                      '${lclCapacity?.data![index].ffVname}'),
+                  SizedBox(height: screenHeight * 0.005),
+                  Divider(
+                    height: screenHeight * 0.01,
+                    color: Colors.lightBlueAccent.withOpacity(0.5),
+                  ),
+                  SizedBox(height: screenHeight * 0.005),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Column(
+                        children: [
+                          infoRowLeft('Vehicle Type',
+                              '${lclCapacity?.data![index].vechileTypeName}')
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          infoRowRight('Vehicle Number',
+                              '${lclCapacity?.data![index].vechileNumber}')
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: screenHeight * 0.005),
+                  Divider(
+                    height: screenHeight * 0.01,
+                    color: Colors.lightBlueAccent.withOpacity(0.5),
+                  ),
+                  SizedBox(height: screenHeight * 0.005),
+                  infoRow(
+                      screenWidth,
+                      screenHeight,
+                      'Location: ',
+                      lclCapacity?.data![index].locationName ??
+                          "Not Available"),
+                  infoRow(screenWidth, screenHeight, 'Status: ',
+                      '${lclCapacity?.data![index].isCapacityAvailable}')
+                ],
+              ),
+            ),
+          );
+        });
   }
 
   Widget displayCapacity(double screenHeight, double screenWidth) {
@@ -334,6 +476,7 @@ class _CapacityPageState extends State<CapacityPage> {
       data = futureCapacity?.data;
     }
     return ListView.builder(
+      physics: AlwaysScrollableScrollPhysics(),
       itemCount: data?.length ?? 0,
       itemBuilder: (context, index) {
         // var res = selectedValue == 'Available Capacity' ? availableCapacity?.data![index] : capacityAtUnloading?.data![index];
@@ -444,6 +587,27 @@ class _CapacityPageState extends State<CapacityPage> {
                         ),
                       )
                     : SizedBox(),
+                SizedBox(
+                  height: screenHeight * 0.015,
+                ),
+                data?[index].currentLocation != null
+                    ? Container(
+                        padding: EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade900,
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.025),
+                        ),
+                        child: Text(
+                          'Track',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04,
+                          ),
+                        ),
+                      )
+                    : SizedBox()
               ],
             ),
           ),

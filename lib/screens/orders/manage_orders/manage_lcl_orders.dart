@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -67,32 +69,64 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     await initializeUser();
     var headers = {
       "UserId": userId,
-      "UserName": userName,
       "UserType": userType,
       "AuthToken": authToken,
+      "UserName": userName,
+      "Content-Type": "application/json",
     };
-    var body = {
-      "StartIndex": '${1}',
-      "EndIndex": '${5}',
-      "Manifest": "",
-    };
-    var response = await http.post(
-      Uri.parse('https://qaapi.xpindia.in/api/get-lcl-for-revise-allocation'),
-      headers: headers,
-      body: body,
-    );
-    if (response.statusCode == 200) {
+    var body = jsonEncode({
+      "StartIndex": 1,
+      "EndIndex": 5,
+      "Manifest": "", // Ensure this is an empty string and not null
+    });
+
+    // var response = await http.post(
+    //   Uri.parse('https://qaapi.xpindia.in/api/get-lcl-for-revise-allocation'),
+    //   headers: headers,
+    //   body: body,
+    // );
+    // if (response.statusCode == 200) {
+    //   setState(() {
+    //     reviseAllocation = lclReviseAllocationModelFromJson(response.body);
+    //     print(headers);
+    //     print(body);
+    //     print(response.statusCode);
+    //     print(response.body);
+    //     isLoading = false;
+    //   });
+    // } else {
+    //   setState(() {
+    //     isLoading = false;
+    //   });
+    //   throw Exception('Unable to load');
+    // }
+
+    try {
+      var response = await http.post(
+        Uri.parse('https://qaapi.xpindia.in/api/get-lcl-for-revise-allocation'),
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          reviseAllocation = lclReviseAllocationModelFromJson(response.body);
+          print(response.statusCode);
+          print(response.body);
+          isLoading = false;
+        });
+      } else {
+        print('Error: ${response.statusCode} - ${response.body}');
+        setState(() {
+          isLoading = false;
+        });
+        throw Exception('Unable to load: ${response.body}');
+      }
+    } catch (e) {
+      print('Exception: $e');
       setState(() {
-        reviseAllocation = lclReviseAllocationModelFromJson(response.body);
-        print(response.statusCode);
-        print(response.body);
         isLoading = false;
       });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      throw Exception('Unable to load');
     }
   }
 
@@ -208,15 +242,25 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
             ),
             isLoading
                 ? Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.blue.shade900,
+                    child: Container(
+                      padding: EdgeInsets.only(top: screenHeight * 0.1),
+                      child: CircularProgressIndicator(
+                        strokeAlign: BorderSide.strokeAlignCenter,
+                        color: Colors.blue.shade900,
+                      ),
                     ),
                   )
                 : Expanded(
                     child: ((rescheduleOrdersLcl?.data!.length ?? 0) > 0)
-                        ? dataList(screenHeight, screenWidth)
-                        : CircularProgressIndicator(
-                            color: Colors.blue.shade900,
+                        ? selectedOption == 'Reschedule/Cancellation Orders'
+                            ? dataList(screenHeight, screenWidth)
+                            : dataListReviseAllocation(
+                                screenHeight, screenWidth)
+                        : Center(
+                            child: Text(
+                              'Unable to Load',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                   ),
           ],
@@ -225,46 +269,127 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
     );
   }
 
-  // Widget _optionCardBuilder(
-  //     double screenHeight, double screenWidth, String title) {
-  //   return Container(
-  //     padding: EdgeInsets.all(screenWidth * 0.01),
-  //     margin: EdgeInsets.only(right: screenWidth * 0.033),
-  //     width: screenHeight * 0.13,
-  //     height: screenHeight * 0.13,
-  //     decoration: BoxDecoration(
-  //       borderRadius: BorderRadius.circular(screenWidth * 0.05),
-  //       color: Colors.white,
-  //       boxShadow: [
-  //         BoxShadow(
-  //           offset: Offset(0, 4),
-  //           blurRadius: 5,
-  //           color: Colors.black26,
-  //         )
-  //       ],
-  //     ),
-  //     child: Center(
-  //       child: Text(title),
-  //     ),
-  //   );
-  // }
+/////////////////////////////////////////////////////////////////////////////
+  Widget dataListReviseAllocation(double screenHeight, double screenWidth) {
+    var data = reviseAllocation?.data;
+    return ListView.builder(
+        itemCount: data?.length ?? 0,
+        itemBuilder: (context, index) {
+          final orders = data?[index];
+          return Padding(
+            padding: EdgeInsets.all(5),
+            child: Container(
+              margin: EdgeInsets.only(top: screenHeight * 0.01),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.07),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                        offset: Offset(0, 3),
+                        color: Colors.black26,
+                        blurRadius: 5)
+                  ]),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            infoRowLeft('XPTS', '${orders?.xptsNo}'),
+                            SizedBox(
+                              height: screenHeight * 0.01,
+                            ),
+                            infoRowLeft(
+                                'Service Type', '${orders?.serviceTypeName}')
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            infoRowCenter(
+                                'Weight', '${orders?.decWeight ?? 0}'),
+                            SizedBox(
+                              height: screenHeight * 0.01,
+                            ),
+                            infoRowCenter(
+                                'Vehicle Type', '${orders?.vehicleType}')
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            infoRowRight(
+                                'Shipping Status', '${orders?.loadingStatus}'),
+                            SizedBox(
+                              height: screenHeight * 0.01,
+                            ),
+                            infoRowRight(
+                                'Vehicle Number', '${orders?.vehicleNumber}')
+                          ],
+                        )
+                      ],
+                    ),
+                    SizedBox(
+                      height: screenHeight * 0.005,
+                    ),
+                    Divider(
+                      color: Colors.lightBlueAccent.withOpacity(0.5),
+                      indent: screenWidth * 0.04,
+                      endIndent: screenWidth * 0.04,
+                    ),
+                    SizedBox(
+                      height: screenHeight * 0.005,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child:
+                              infoRowLeft('FFV Name', '${orders?.vcFfvname}'),
+                        ),
+                        SizedBox(
+                          width: screenWidth * 0.04,
+                        ),
+                        Expanded(
+                          child: infoRowRight(
+                              'Driver Details', '${orders?.driverName}'),
+                        ),
+                      ],
+                    ),
+                    Divider(
+                      color: Colors.lightBlueAccent.withOpacity(0.5),
+                      indent: screenWidth * 0.04,
+                      endIndent: screenWidth * 0.04,
+                    ),
+                    Container(
+                      padding: EdgeInsets.all(screenWidth * 0.02),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade900,
+                        borderRadius:
+                            BorderRadius.circular(screenWidth * 0.025),
+                      ),
+                      child: Text(
+                        'Reschedule',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
 
+////////////////////////////////////////////////////////////////////////////
   Widget dataList(double screenHeight, double screenWidth) {
     var data = rescheduleOrdersLcl?.data;
-    // var data;
-    // if (selectedOption == 'Pending/Provisional Orders') {
-    //   data = pendingOrders?.data.provisionalOrdersList ?? []; ////fix this
-    // } else if (selectedOption == 'Reschedule/Cancel Orders') {
-    //   data = rescheduledOrders?.data ?? [];
-    // }
-    // String getServiceTypeName(ServiceType serviceType) {
-    //   // Find the key (string name) that corresponds to the given enum value
-    //   return serviceTypeValues.map.keys.firstWhere(
-    //         (key) => serviceTypeValues.map[key] == serviceType,
-    //     orElse: () => " ", // Fallback if no match is found
-    //   );
-    // }
-
     return ListView.builder(
         itemCount: data?.length ?? 0,
         itemBuilder: (context, index) {
@@ -392,6 +517,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
         });
   }
 
+///////////////////////////////////////////////////////////////////////////
   Widget infoRow(
       double screenWidth, double screenHeight, String label, String value) {
     return Row(
@@ -414,6 +540,36 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
   }
 
   Widget infoRowLeft(String label, String value,
+      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: labelStyle ??
+              TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+                color: CupertinoColors.black.withOpacity(0.5),
+              ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: valueStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: CupertinoColors.black,
+                ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget infoRowCenter(String label, String value,
       {TextStyle? labelStyle, TextStyle? valueStyle}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
