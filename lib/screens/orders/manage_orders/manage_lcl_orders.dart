@@ -111,8 +111,8 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
       if (response.statusCode == 200) {
         setState(() {
           reviseAllocation = lclReviseAllocationModelFromJson(response.body);
-          print(response.statusCode);
-          print(response.body);
+          // print(response.statusCode);
+          // print(response.body);
           isLoading = false;
         });
       } else {
@@ -158,7 +158,7 @@ class _ManageLclOrdersState extends State<ManageLclOrders> {
         rescheduleOrdersLcl = lclRescheduleModelFromJson(response.body);
         isLoading = false;
       });
-      print(response.body);
+      // print(response.body);
     } else {
       setState(() {
         isLoading = false;

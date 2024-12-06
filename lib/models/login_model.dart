@@ -51,7 +51,7 @@ class Data {
   dynamic role;
   bool? isAdmin;
   bool? isAssociate;
-  dynamic dateOfBirth;
+  DateTime? dateOfBirth;
   DateTime? dateOfJoining;
   List<Permission>? permissions;
   dynamic ffvId;
@@ -110,7 +110,10 @@ class Data {
         role: json["Role"],
         isAdmin: json["IsAdmin"],
         isAssociate: json["IsAssociate"],
-        dateOfBirth: json["DateOfBirth"],
+        // dateOfBirth: json["DateOfBirth"],
+        dateOfBirth: json["DateOfBirth"] == null
+            ? null
+            : DateTime.parse(json["DateOfBirth"]),
         dateOfJoining: json["DateOfJoining"] == null
             ? null
             : DateTime.parse(json["DateOfJoining"]),
@@ -150,7 +153,7 @@ class Data {
         "Role": role,
         "IsAdmin": isAdmin,
         "IsAssociate": isAssociate,
-        "DateOfBirth": dateOfBirth,
+        "DateOfBirth": dateOfBirth?.toIso8601String(),
         "DateOfJoining": dateOfJoining?.toIso8601String(),
         "Permissions": permissions == null
             ? []

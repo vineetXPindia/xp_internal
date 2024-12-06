@@ -35,11 +35,6 @@ class _OrdersPageState extends State<OrdersPage> {
             vertical: screenHeight * 0.01, horizontal: screenWidth * 0.05),
         child: Column(
           children: [
-            // TopBar(
-            //   screenWidth: screenWidth,
-            //   screenHeight: screenHeight,
-            //   title: title,
-            // ),
             Container(
               padding: EdgeInsets.all(screenWidth * 0.03),
               child: LayoutBuilder(
@@ -56,7 +51,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     fontSize: screenWidth * 0.05,
                   ),
                   selectedColor: Colors.white,
-                  fillColor: Colors.blue.shade900.withOpacity(0.7),
+                  fillColor: Colors.blue.shade900,
                   color: Colors.black,
                   isSelected: selectedService,
                   children: <Widget>[
@@ -83,8 +78,12 @@ class _OrdersPageState extends State<OrdersPage> {
                         MaterialPageRoute(
                             builder: (context) => BookNewLclOrder()));
               },
-              child: _cardBuilder('Book New Order',
-                  'lib/assets/icons/orders.png', screenHeight, screenWidth),
+              child: _cardBuilder(
+                  'Book New Order',
+                  'Book new orders in FCL or LCL',
+                  'lib/assets/icons/orders.png',
+                  screenHeight,
+                  screenWidth),
             ),
             GestureDetector(
               onTap: () {
@@ -96,8 +95,54 @@ class _OrdersPageState extends State<OrdersPage> {
                         MaterialPageRoute(
                             builder: (context) => ManageLclOrders()));
               },
-              child: _cardBuilder('Manage Orders',
-                  'lib/assets/icons/manage.png', screenHeight, screenWidth),
+              child: Container(
+                margin: EdgeInsets.only(top: screenHeight * 0.035),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                width: screenWidth * 0.8,
+                height: screenHeight * 0.25,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.07),
+                  boxShadow: [
+                    BoxShadow(
+                        offset: Offset(0, 2),
+                        color: Colors.black26.withOpacity(0.3),
+                        blurRadius: 5),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset('lib/assets/icons/manage.png',
+                        height: screenHeight * 0.08),
+                    Text(
+                      title,
+                      style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          flex: 3,
+                          child: Text('Manage Provisional Orders'),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [Text('and')],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [Text('FFV Allocation')],
+                    )
+                  ],
+                ),
+              ),
+              // child: _cardBuilder('Manage Orders', 'Manage Provisional Orders',
+              //     'lib/assets/icons/manage.png', screenHeight, screenWidth),
             )
           ],
         ),
@@ -105,11 +150,12 @@ class _OrdersPageState extends State<OrdersPage> {
     );
   }
 
-  Widget _cardBuilder(
-      String title, String assetPath, double screenHeight, double screenWidth) {
+  Widget _cardBuilder(String title, String subtitle, String assetPath,
+      double screenHeight, double screenWidth) {
     return Container(
       margin: EdgeInsets.only(top: screenHeight * 0.035),
-      width: screenWidth * 0.6,
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+      width: screenWidth * 0.8,
       height: screenHeight * 0.25,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
@@ -125,16 +171,37 @@ class _OrdersPageState extends State<OrdersPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(assetPath, height: screenHeight * 0.08),
-          SizedBox(
-            height: screenHeight * 0.02,
-          ),
           Text(
             title,
             style: TextStyle(
-                fontSize: screenWidth * 0.05, fontWeight: FontWeight.bold),
+                fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                flex: 3,
+                child: Text(subtitle),
+              ),
+            ],
+          )
         ],
       ),
+      // child: Column(
+      //   mainAxisAlignment: MainAxisAlignment.center,
+      //   // crossAxisAlignment: CrossAxisAlignment.center,
+      //   children: [
+      //     Image.asset(assetPath, height: screenHeight * 0.08),
+      //     SizedBox(
+      //       height: screenHeight * 0.02,
+      //     ),
+      //     Text(
+      //       title,
+      //       style: TextStyle(
+      //           fontSize: screenWidth * 0.05, fontWeight: FontWeight.bold),
+      //     ),
+      //   ],
+      // ),
     );
   }
 }

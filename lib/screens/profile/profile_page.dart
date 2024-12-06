@@ -183,8 +183,13 @@ class _ProfilePageState extends State<ProfilePage> {
               SizedBox(
                 height: screenHeight * 0.01,
               ),
-              infoRow(screenHeight, screenWidth, 'Date of Birth',
-                  '${dateOfBirth ?? " "}'),
+              infoRow(
+                  screenHeight,
+                  screenWidth,
+                  'Date of Birth',
+                  dateOfBirth != null
+                      ? DateFormat('dd-MM-yyyy').format(dateOfBirth!)
+                      : "Not Available"),
               SizedBox(
                 height: screenHeight * 0.01,
               ),
@@ -192,7 +197,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 screenHeight,
                 screenWidth,
                 'Date of Joining',
-                DateFormat('dd-MM-yyyy').format(dateOfJoining!),
+                dateOfJoining != null
+                    ? DateFormat('dd-MM-yyyy').format(dateOfJoining!)
+                    : "Not Available",
               ),
             ],
           ),

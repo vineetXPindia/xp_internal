@@ -141,7 +141,9 @@ Widget buildDropdown(double screenHeight, double screenWidth,
           dropdownMenuEntries: dataList
               .map((e) => DropdownMenuEntry(value: e, label: e))
               .toList(),
-          onSelected: (value) {},
+          onSelected: (value) {
+            print(value);
+          },
           enabled: true,
           enableSearch: true,
           hintText: hint,

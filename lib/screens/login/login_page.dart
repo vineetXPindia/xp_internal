@@ -23,7 +23,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _login() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
-
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorDialog('Please enter email and password.');
+      return;
+    }
     String url = 'https://qaapi.xpindia.in/api/login';
     var headers = {"UserType": "User"};
     var params = {"email": email, "password": password, "DeviceId": ""};
@@ -36,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
         headers: headers,
         body: params,
       );
-      var data = response.body;
+      var data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -97,84 +100,96 @@ class _LoginPageState extends State<LoginPage> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      resizeToAvoidBottomInset:
+          true, // Ensures keyboard doesn't overlap content
       body: Stack(
         children: [
+          // Fixed background image
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('lib/assets/cover_image/background4.png'),
-                fit: BoxFit.cover,
+                image: AssetImage(
+                    'lib/assets/cover_image/background4.png'), // Replace with your image path
+                fit: BoxFit.cover, // Ensures the image covers the entire screen
               ),
             ),
           ),
-          Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                  vertical: screenHeight * 0.05, horizontal: screenWidth * 0.1),
-              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
-              height: screenHeight * 0.45,
-              width: screenWidth,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(screenWidth * 0.1),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset(
-                    'lib/assets/icons/xp_logo_square.png',
-                    height: screenHeight * 0.05,
+          // Scrollable content in a column
+          SafeArea(
+            child: Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                      vertical: screenHeight * 0.05,
+                      horizontal: screenWidth * 0.1),
+                  width: screenWidth,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.1),
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      hintText: "Email",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Ensure it wraps content
+                    children: [
+                      Image.asset(
+                        'lib/assets/icons/xp_logo_square.png',
+                        height: screenHeight * 0.05,
                       ),
-                      fillColor: Colors.white,
-                      filled: true,
-                      prefixIcon: const Icon(Icons.mail_rounded),
-                    ),
-                  ),
-                  TextField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      hintText: "Password",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide.none,
-                      ),
-                      fillColor: Colors.white,
-                      filled: true,
-                      prefixIcon: const Icon(Icons.lock_rounded),
-                    ),
-                    obscureText: true,
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: isLoading ? null : _login,
-                    child: isLoading
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          )
-                        : const Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          hintText: "Email",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
                           ),
+                          fillColor: Colors.white,
+                          filled: true,
+                          prefixIcon: const Icon(Icons.mail_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          hintText: "Password",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide.none,
+                          ),
+                          fillColor: Colors.white,
+                          filled: true,
+                          prefixIcon: const Icon(Icons.lock_rounded),
+                        ),
+                        obscureText: true,
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: isLoading ? null : _login,
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xp_internal/constants/colors.dart';
 import 'package:xp_internal/models/book_new/get_origin_destination_model.dart';
@@ -21,6 +22,8 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
   final String title = 'Book New LCL Order';
   String? selectedService;
   DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+  TimeOfDay? toTime;
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController originController = TextEditingController();
   final TextEditingController destinationController = TextEditingController();
@@ -168,6 +171,7 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
     return Scaffold(
       backgroundColor: newCardBG,
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         backgroundColor: newCardBG,
         title: Text(
@@ -262,6 +266,78 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
                   ),
                 ],
               ),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              Row(
+                children: [
+                  Icon(Icons.watch_later_rounded),
+                  SizedBox(
+                    width: screenWidth * 0.03,
+                  ),
+                  ///////////////////////////////////////// -> time picker
+                  GestureDetector(
+                    onTap: () async {
+                      TimeOfDay? time = await showTimePicker(
+                        barrierColor: Colors.black.withOpacity(0.8),
+                        barrierDismissible: true,
+                        barrierLabel: 'Select Pickup Time',
+                        context: context,
+                        helpText: 'Select Pickup Time',
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          selectedTime = time;
+                        });
+                        toTime = _getTimeThreeHoursLater(selectedTime!);
+                      }
+                    },
+                    child: Container(
+                      width: screenWidth * 0.4,
+                      height: screenHeight * 0.055,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.04,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          selectedTime != null
+                              ? formatTime(selectedTime!)
+                              : 'From',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.045,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: screenWidth * 0.02,
+                  ),
+                  ///////////////////////////////////////////// -> time picker
+                  Container(
+                    height: screenHeight * 0.055,
+                    width: screenWidth * 0.4,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(
+                        screenWidth * 0.04,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        toTime != null ? formatTime(toTime!) : 'To',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               SizedBox(height: screenHeight * 0.01),
               Row(
                 children: [
@@ -312,7 +388,7 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
               ),
               Row(
                 children: [
-                  Icon(Icons.gps_fixed_rounded),
+                  Icon(Icons.location_on),
                   SizedBox(
                     width: screenWidth * 0.025,
                   ),
@@ -338,7 +414,7 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
                       onSelected: (value) {},
                       enabled: true,
                       enableSearch: true,
-                      hintText: 'Select Origin',
+                      hintText: 'Select Destination',
                       enableFilter: true,
                       requestFocusOnTap: true,
                       inputDecorationTheme: InputDecorationTheme(
@@ -354,53 +430,6 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
                   ),
                 ],
               ),
-              // Row(
-              //   children: [
-              //     Icon(Icons.gps_fixed_rounded),
-              //     SizedBox(
-              //       width: screenWidth * 0.025,
-              //     ),
-              //     Container(
-              //       decoration: BoxDecoration(
-              //           color: Colors.white,
-              //           borderRadius:
-              //               BorderRadius.circular(screenWidth * 0.04)),
-              //       child: DropdownMenu<String>(
-              //         menuStyle: MenuStyle(
-              //           backgroundColor: MaterialStateProperty.all(
-              //               Colors.white), // Dropdown menu background color
-              //           padding: MaterialStateProperty.all(
-              //             EdgeInsets.only(top: -screenHeight * 0.1),
-              //           ),
-              //         ),
-              //         width: screenWidth * 0.825,
-              //         menuHeight: 200,
-              //         controller: originController,
-              //         dropdownMenuEntries: originList
-              //             .map((e) => DropdownMenuEntry(value: e, label: e))
-              //             .toList(),
-              //         onSelected: (value) {
-              //           selectedOrigin = value;
-              //         },
-              //         enabled: true,
-              //         enableSearch: true,
-              //         hintText: 'Select Origin',
-              //         enableFilter: true,
-              //         requestFocusOnTap: true,
-              //         inputDecorationTheme: InputDecorationTheme(
-              //           border: InputBorder.none, // Removes the outline
-              //           enabledBorder:
-              //               InputBorder.none, // Removes the border when enabled
-              //           focusedBorder:
-              //               InputBorder.none, // Removes the border when focused
-              //           contentPadding:
-              //               EdgeInsets.only(left: screenWidth * 0.03),
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // ),
-
               SizedBox(
                 height: screenHeight * 0.01,
               ),
@@ -409,6 +438,11 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
               SizedBox(height: screenHeight * 0.01),
               inputField(screenHeight, screenWidth, 'Enter POC Number',
                   Icons.phone_rounded),
+              SizedBox(
+                height: screenHeight * 0.01,
+              ),
+              inputField(
+                  screenHeight, screenWidth, 'Remarks', Icons.feedback_rounded),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -433,9 +467,35 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
                             ),
                           ),
                         )
-                      : SizedBox()
+                      : SizedBox(),
                 ],
-              )
+              ),
+              SizedBox(
+                height: screenHeight * 0.02,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                      color: Colors.blue.shade900,
+                    ),
+                    child: Text(
+                      'Book Order',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.045,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              SizedBox(
+                height: screenHeight * 0.02,
+              ),
             ],
           ),
         ),
@@ -486,5 +546,22 @@ class _BookNewLclOrderState extends State<BookNewLclOrder> {
         )
       ],
     );
+  }
+
+  TimeOfDay _getTimeThreeHoursLater(TimeOfDay time) {
+    int newHour = time.hour + 3;
+    if (newHour >= 24) {
+      newHour -= 24; // Wrap around if it exceeds 24 hours
+    }
+    return TimeOfDay(hour: newHour, minute: time.minute);
+  }
+
+  String formatTime(TimeOfDay time) {
+    // Convert TimeOfDay to DateTime
+    final now = DateTime.now();
+    final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+
+    // Format DateTime to 12-hour time with am/pm
+    return DateFormat('hh:mm a').format(dt);
   }
 }
